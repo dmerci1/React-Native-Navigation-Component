@@ -5,6 +5,8 @@ import {
   View,
   ActivityIndicator
 } from 'react-native';
+import store from './Store';
+
 import { MaterialIcons } from '@expo/vector-icons';
 
 import { fetchUserContact } from './utils/api';
@@ -30,28 +32,31 @@ export default class User extends React.Component {
   });
 
   state = {
-    user: [],
-    loading: true,
-    error: false
+    user: store.getState().user,
+    loading: store.getState().isFetchingUser,
+    error: store.getState().error,
   };
 
   async componentDidMount() {
-    try {
-      const user = await fetchUserContact();
+    this.unsubscribe = store.onChange(() =>
+    this.setState({
+      user: store.getState().user,
+      loading: store.getState().isFetchingUser,
+      error: store.getState().error,
+    }),
+  );
 
-      this.setState({
-        user,
-        loading: false,
-        error: false,
-      });
-    } catch (e) {
-      this.setState({
-        loading: false,
-        error: true,
-      });
-    }
-    }
+    const user = await fetchUserContact();
 
+    store.setState({
+      user,
+      isFetchingUser: false
+    });
+  }
+
+  componentWillUnmount() {
+    this.unsubscribe();
+  }
     render() {
       const { loading, user, error } = this.state;
       const { avatar, name, phone } = user;

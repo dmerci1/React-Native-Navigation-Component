@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator
 } from 'react-native';
+import store from './Store';
 
 import { fetchContacts } from './utils/api';
 
@@ -19,27 +20,32 @@ export default class Favorites extends React.Component {
   };
 
   state = {
-    contacts: [],
-    loading: true,
-    error: false
+    contacts: store.getState().contacts,
+    loading: store.getState().isFetchingContacts,
+    error: store.getState().error,
   };
 
   async componentDidMount() {
-    try {
-      const contacts = await fetchContacts();
+    this.unsubscribe = store.onChange(() =>
+    this.setState({
+      contacts: store.getState().contacts,
+      loading: store.getState().isFetchingContacts,
+      error: store.getState().error,
+    }),
+  );
 
-      this.setState({
-        contacts,
-        loading: false,
-        error: false,
-      });
-    } catch (e) {
-      this.setState({
-        loading: false,
-        error: true,
-      });
-    }
-    }
+  if (contact.length === 0) {
+    const fetchedContacs = await fetchContacts();
+
+    store.setState({
+      contacts: fetchedContacs,
+      isFetchingContacts: false
+    });
+  }
+}
+  componentWillUnmount() {
+    this.unsubscribe();
+  }
 
 
   renderFavoriteThumbnail = ({ item }) => {

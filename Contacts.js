@@ -1,9 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, Linking } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 import colors from './utils/colors';
+import getURLParams from './utils/getURLParams';
 
+import store from './Store';
 import FriendsListItem from './FriendsListItem';
 
 import { fetchContacts } from './utils/api';
@@ -32,28 +34,53 @@ export default class Contacts extends React.Component {
   });
 
   state = {
-    contacts: [],
-    loading: true,
-    error: false,
+    contacts: store.getState().contacts,
+    loading: store.getState().isFetchingContacts,
+    error: store.getState().error,
   };
 
   async componentDidMount() {
-    try {
+    this.unsubscribe = store.onChange(() =>
+    this.setState({
+      contacts: store.getState().contacts,
+      loading: store.getState().isFetchingContacts,
+      error: store.getState().error,
+    }),
+  );
       const contacts = await fetchContacts();
 
-      this.setState({
-        contacts,
-        loading: false,
-        error: false,
-      });
-    } catch (e) {
-      this.setState({
-        loading: false,
-        error: true,
-      });
-    }
-  }
+      store.setState({ contacts, isFetchingContacts: false });
 
+      Linking.addEventListener('url', this.handleOpenUrl);
+
+      const url = await Linking.getInitialUrl();
+      this.handleOpenUrl({ url });
+
+}
+
+componentWillUnmount() {
+  this.unsubscribe();
+  Linking.removeEventListener('url', this.handleOpenUrl);
+}
+
+handleOpenUrl(event) {
+  const { navigatio: { navigate } } = this.propTypes
+  const { url } = event;
+  const params = getURLParams(url);
+
+  if(params.name) {
+    const queriedContact = store
+      .getState()
+      .contacts.find(
+        contact =>
+          contact.name.split(' ')[0].toLowerCase() ===
+          params.name.toLowerCase(),
+      );
+      if(queriedContact) {
+        navigate('Profile', { id: queriedContact.id });
+      }
+  }
+}
 renderContact = ({ item }) => {
   const { navigation: { navigate }} = this.props;
   const { id, name, avatar, phone } = item;
@@ -98,4 +125,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
   },
-})
+});

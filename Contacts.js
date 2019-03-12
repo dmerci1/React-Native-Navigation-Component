@@ -53,7 +53,7 @@ export default class Contacts extends React.Component {
 
       Linking.addEventListener('url', this.handleOpenUrl);
 
-      const url = await Linking.getInitialUrl();
+      const url = await Linking.getInitialURL();
       this.handleOpenUrl({ url });
 
 }
@@ -64,7 +64,7 @@ componentWillUnmount() {
 }
 
 handleOpenUrl(event) {
-  const { navigatio: { navigate } } = this.propTypes
+  const { navigation: { navigate } } = this.propTypes
   const { url } = event;
   const params = getURLParams(url);
 
